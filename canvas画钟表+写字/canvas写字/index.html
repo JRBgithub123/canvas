@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8" />
+		<title></title>
+		<script src='js/jquery-1.11.3.js'></script>
+		<style>
+			
+			#canvas{
+				display: block;
+				margin:0 auto;
+				border:1px solid #ccc;
+			}
+			
+			.box{width:500px;height:35px;margin:20px auto;border:1px solid #ccc;border-radius:10px;padding-top:15px;}
+			.btn{width:20px;height:20px;float:left;margin:0 10px;}
+			.btn:hover{cursor:pointer;outline:2px solid  pink;}
+			.btn-selected{outline:2px solid  pink;}
+			
+			#black-btn{background: black;}
+			#red-btn{background: red;}
+			#green-btn{background: green;}
+			#blue-btn{background: blue;}
+			
+			.clear{float:right;font-size: 16px;margin-right: 10px;border:1px solid #ccc;}
+			.clear:hover{background: #ccc;cursor:pointer;}
+		</style>
+	</head>
+	<body>
+			
+			<canvas id="canvas" ></canvas>
+		   <div class="box">
+		   		<div id="black-btn" class="btn btn-selected"></div>
+		   		<div id="red-btn" class="btn b"></div>
+		   		<div id="green-btn" class="btn "></div>
+		   		<div id="blue-btn" class="btn "></div>
+		   		
+		   		<div class="clear">清除</div>
+		   </div>
+		
+		
+		<script>
+			var canvasWidth=500;
+			var canvasHeight=canvasWidth;
+			var dom=document.getElementById("canvas");
+			var ctx=dom.getContext("2d");
+			var isMouseDown=false;
+			//设置鼠标所处的上一个位置信息  默认值
+			var lastLoc={x:0,y:0}
+			var lastTime=0;//设置鼠标上一个位置的时间戳
+			var lastLineWidth=-1;
+			
+			
+			dom.width=canvasWidth;
+			dom.height=canvasHeight;
+			//console.log(dom.getBoundingClientRect().left);
+		
+		//
+		var strokeStyle;
+		$(".btn").click(function(){
+			$('.btn').removeClass("btn-selected");
+			$(this).addClass("btn-selected");
+			strokeStyle=$(this).css("background-color");
+		})
+				
+		$('.clear').click(function(){
+			ctx.clearRect(0,0,canvasWidth,canvasWidth);
+			draw();
+		})
+		
+		dom.onmousedown=function(e){
+			//console.log(e);
+			e.preventDefault();
+			isMouseDown=true;
+			//console.log("down");
+			
+			//获取鼠标点击的位置
+			lastLoc=windowToCanvas(e.clientX,e.clientY);
+			//console.log(loc.x);
+			lastTime=new Date().getTime();
+		}
+		
+		dom.onmouseup=function(e){
+			e.preventDefault();
+			isMouseDown=false;
+				//console.log("up");
+		}
+		dom.onmouseout=function(e){
+			e.preventDefault();
+			isMouseDown=false;
+				//console.log("out");
+		}
+					
+		dom.onmousemove=function(e){
+			e.preventDefault();
+			if(isMouseDown){
+				//console.log("move");
+				//获取鼠标移动的位置信息
+				var nowLoc=windowToCanvas(e.clientX,e.clientY);
+				var nowTime=new Date().getTime();
+				
+				
+				//获取两点之间的距离和时间
+				var s=distance(nowLoc,lastLoc);
+				var t=nowTime-lastTime;
+				console.log();
+				var lineWidth=calcLineWidth(s,t);//设置线宽
+							
+				
+				ctx.beginPath();
+				ctx.moveTo(lastLoc.x,lastLoc.y);
+				ctx.lineTo(nowLoc.x,nowLoc.y);
+				ctx.strokeStyle=strokeStyle;
+				
+				ctx.lineWidth=lineWidth;
+				ctx.lineCap='round';
+				ctx.lineJoin='round';
+				ctx.stroke();
+				
+				//将当前状态赋值给上一个状态
+				lastLoc=nowLoc;
+				lastTime=nowTime;
+				lastLineWidth=lineWidth;
+			}
+			
+		}
+		
+		
+		//获取两点之间的距离
+		function distance(nowLoc,lastLoc){
+			//console.log(Math.sqrt(Math.pow((nowLoc.x-lastLoc.x),2)+Math.pow((nowLoc.y-lastLoc.y),2)))
+			return Math.sqrt(Math.pow((nowLoc.x-lastLoc.x),2)+Math.pow((nowLoc.y-lastLoc.y),2));  
+		}
+		
+		
+	var maxLineWidth=30;
+	var minLineWidth=1;
+	var maxV=10;
+	var minV=0.1;
+		//设置线宽
+		function calcLineWidth(s,t){
+			
+			var v=s/t;
+			//console.log(v);
+			var line;
+			
+			
+			if(v<=minV){
+				line=maxLineWidth;
+			}else if(v>=maxV){
+				line=minLineWidth;
+			}else{
+				line=maxLineWidth-(v-minV)/(maxV-minV)*(maxLineWidth-minLineWidth);
+			}
+			
+			if(lastLineWidth==-1){
+				return line;
+			}
+			
+			//console.log(s,t);
+			return lastLineWidth*3/4+(line/4);
+		}
+		
+		//获得鼠标在画布上的点击位置
+		function windowToCanvas(x,y){
+			var cc=dom.getBoundingClientRect();
+			return {x:Math.round(x-cc.left),y:Math.round(y-cc.top)}
+		}
+			
+		function draw(){
+			ctx.save();
+			//绘制边框
+			ctx.strokeStyle="red";
+			ctx.lineWidth=6;
+			ctx.beginPath();
+			ctx.moveTo(3,3);
+			ctx.lineTo(canvasWidth-3,3);
+			ctx.lineTo(canvasWidth-3,canvasHeight-3);
+			ctx.lineTo(3,canvasHeight-3);
+			ctx.closePath();
+			ctx.stroke();
+			//绘制米字格
+			
+			ctx.strokeStyle="blue";
+			ctx.beginPath();
+			ctx.moveTo(0,0);
+			ctx.lineTo(canvasWidth,canvasHeight);
+			
+			ctx.moveTo(canvasWidth,0);
+			ctx.lineTo(0,canvasHeight);
+			
+			ctx.moveTo(0,canvasHeight/2);
+			ctx.lineTo(canvasWidth,canvasHeight/2);
+			
+			ctx.moveTo(canvasWidth/2,0);
+			ctx.lineTo(canvasWidth/2,canvasHeight);
+			
+			ctx.lineWidth=1;
+			ctx.stroke();
+			ctx.restore();
+		}
+			
+			
+			draw();
+			
+		</script>
+	</body>
+</html>
